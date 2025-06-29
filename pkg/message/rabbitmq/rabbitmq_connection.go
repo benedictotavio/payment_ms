@@ -1,0 +1,98 @@
+package rabbitmq
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/rabbitmq/amqp091-go"
+)
+
+type RabbitMQConnection struct {
+	Conn *amqp091.Connection
+	Channel *amqp091.Channel
+}
+
+func NewConnection() *RabbitMQConnection {
+	conn, err := amqp091.Dial("amqp://guest:guest@localhost:5672/") // TODO: Use variveis de ambiente
+
+	if err != nil {
+		panic(err)
+	}
+
+	channel, err := conn.Channel()
+
+	channel.ExchangeDeclare(
+		"payment.service", // name
+		"fanout", // type
+		true,     // durable
+		false,    // auto-deleted
+		false,    // internal
+		false,    // no-wait
+		nil,      // arguments
+	)
+
+	channel.QueueDeclare(
+		"payment", // name
+		true,      // durable
+		false,     // delete when unused
+		false,     // exclusive
+		false,     // no-wait
+		nil,       // arguments
+	)
+
+	channel.QueueBind(
+		"payment", // queue
+		"payment.receive", // routing key
+		"payment.service", // exchange
+		false,   // no-wait
+		nil,     // arguments
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return &RabbitMQConnection{
+		Conn: conn,
+		Channel: channel,
+	}
+}
+
+func (r *RabbitMQConnection) Close() error {
+	return r.Channel.Close()
+}
+
+func (r *RabbitMQConnection) ConsumeQueue(queue string) (string, error) {
+
+	var message string
+	
+	defer r.Conn.Close()
+
+	msgs, err := r.Channel.Consume(
+		queue, // queue
+		"",    // consumer
+		true,  // auto-ack
+		false, // exclusive
+		false, // no-local
+		false, // no-wait
+		nil,   // args
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	forever := make(chan bool)
+
+	go func() {
+		for d := range msgs {
+			fmt.Printf("Received a message: %s\n", string(d.Body))
+			message = string(d.Body)
+		}
+	}()
+	
+	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+
+	<-forever
+	return message, nil
+}
