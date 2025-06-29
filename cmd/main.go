@@ -2,15 +2,12 @@ package main
 
 import (
 	"github.com/benedictotavio/payment_ms/internal/http"
-	"github.com/benedictotavio/payment_ms/pkg/message/rabbitmq"
+	"github.com/benedictotavio/payment_ms/internal/infrasctructure/queue"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	rabbitmq := rabbitmq.NewConnection()
-	defer rabbitmq.Close()
-	go rabbitmq.ConsumeQueue("payments")
-
+	queue.ConsumeQueue("payments")
 	gin := gin.Default()
 	handler := http.PaymentHandler{}
 	handler.RegisterRoutes(gin)

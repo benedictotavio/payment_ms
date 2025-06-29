@@ -7,11 +7,11 @@ import (
 	"github.com/rabbitmq/amqp091-go"
 )
 
-type RabbitMQProoducer struct {
+type RabbitMQProducer struct {
 	Channel *amqp091.Channel
 }
 
-func (r *RabbitMQProoducer) Publish(queue string, body []byte, exchange string) error {
+func (r *RabbitMQProducer) Publish(queue string, body []byte, exchange string) error {
 
 	q, err := r.Channel.QueueDeclare(
 		queue,
