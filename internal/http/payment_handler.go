@@ -13,6 +13,6 @@ func (p *PaymentHandler) RegisterRoutes(r *gin.Engine) {
 
 func (p *PaymentHandler) ListPayments(c *gin.Context) {
 	c.JSON(200, gin.H{
-		"message": "Hello World",
+		"status": "ok",
 	})
 }

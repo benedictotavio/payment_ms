@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/benedictotavio/payment_ms/internal/http"
 	"github.com/benedictotavio/payment_ms/internal/infrasctructure/queue"
 	"github.com/gin-gonic/gin"
@@ -14,8 +16,19 @@ func main() {
 			RoutingKey:   "payment.receive",
 		},
 	)
+	startServer()
+}
+
+func startServer() {
 	gin := gin.Default()
 	handler := http.PaymentHandler{}
 	handler.RegisterRoutes(gin)
-	gin.Run(":8080")
+
+	var port = os.Getenv("PORT")
+
+	if port == "" {
+		port = "8080"
+	}
+
+	gin.Run(":" + port)
 }
