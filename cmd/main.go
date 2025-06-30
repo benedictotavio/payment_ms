@@ -7,7 +7,13 @@ import (
 )
 
 func main() {
-	queue.ConsumeQueue("payments")
+	go queue.ConsumeQueue(
+		queue.QueueConfig{
+			ExchangeName: "payment.service",
+			QueueName:    "payments",
+			RoutingKey:   "payment.receive",
+		},
+	)
 	gin := gin.Default()
 	handler := http.PaymentHandler{}
 	handler.RegisterRoutes(gin)

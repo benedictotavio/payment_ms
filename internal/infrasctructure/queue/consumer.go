@@ -2,10 +2,21 @@ package queue
 
 import "github.com/benedictotavio/payment_ms/pkg/message/rabbitmq"
 
-func ConsumeQueue(queue string) {
+type QueueConfig struct {
+	ExchangeName string
+	QueueName    string
+	RoutingKey     string
+}
+
+func ConsumeQueue(
+	queueConfig QueueConfig,
+) {
 	conn := rabbitmq.NewConnection()
-	defer conn.Close()
-	conn.ConsumeQueue(
-		queue,
+	conn.CreateExchange(queueConfig.ExchangeName)
+	conn.CreateQueue(
+		queueConfig.QueueName,
+		queueConfig.RoutingKey,
+		queueConfig.ExchangeName,
 	)
+	conn.ConsumeQueue(queueConfig.QueueName)
 }

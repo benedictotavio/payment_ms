@@ -8,7 +8,7 @@ import (
 )
 
 type RabbitMQConnection struct {
-	Conn *amqp091.Connection
+	Conn    *amqp091.Connection
 	Channel *amqp091.Channel
 }
 
@@ -21,39 +21,12 @@ func NewConnection() *RabbitMQConnection {
 
 	channel, err := conn.Channel()
 
-	channel.ExchangeDeclare(
-		"payment.service", // name
-		"fanout", // type
-		true,     // durable
-		false,    // auto-deleted
-		false,    // internal
-		false,    // no-wait
-		nil,      // arguments
-	)
-
-	channel.QueueDeclare(
-		"payment", // name
-		true,      // durable
-		false,     // delete when unused
-		false,     // exclusive
-		false,     // no-wait
-		nil,       // arguments
-	)
-
-	channel.QueueBind(
-		"payment", // queue
-		"payment.receive", // routing key
-		"payment.service", // exchange
-		false,   // no-wait
-		nil,     // arguments
-	)
-
 	if err != nil {
 		panic(err)
 	}
 
 	return &RabbitMQConnection{
-		Conn: conn,
+		Conn:    conn,
 		Channel: channel,
 	}
 }
@@ -65,7 +38,7 @@ func (r *RabbitMQConnection) Close() error {
 func (r *RabbitMQConnection) ConsumeQueue(queue string) (string, error) {
 
 	var message string
-	
+
 	defer r.Conn.Close()
 
 	msgs, err := r.Channel.Consume(
@@ -90,9 +63,56 @@ func (r *RabbitMQConnection) ConsumeQueue(queue string) (string, error) {
 			message = string(d.Body)
 		}
 	}()
-	
+
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
 
 	<-forever
 	return message, nil
+}
+
+func (r *RabbitMQConnection) CreateExchange(exchangeName string) (string, error) {
+	err := r.Channel.ExchangeDeclare(
+		exchangeName,
+		"fanout", // type
+		true,     // durable
+		false,    // auto-deleted
+		false,    // internal
+		false,    // no-wait
+		nil,      // arguments
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	return "", nil
+}
+
+func (r *RabbitMQConnection) CreateQueue(queueName string, routingKey string, exchange string) error {
+	_, err := r.Channel.QueueDeclare(
+		queueName, // name
+		true,      // durable
+		false,     // delete when unused
+		false,     // exclusive
+		false,     // no-wait
+		nil,       // arguments
+	)
+
+	if err != nil {
+		return err
+	}
+
+	err = r.Channel.QueueBind(
+		queueName,  // queue
+		routingKey, // routing key
+		exchange,   // exchange
+		false,      // no-wait
+		nil,        // arguments
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"log"
 
-	"github.com/stripe/stripe-go/v82/checkout/session"
 	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v82/checkout/session"
 )
 
 type PaymentClient interface {
@@ -19,7 +19,6 @@ type payment struct {
 	failureUrl      string
 }
 
-// GetPaymentStatus implements PaymentClient.
 func (p *payment) GetPaymentStatus(paymentId string) (*stripe.CheckoutSession, error) {
 	stripe.Key = p.stripeClientKey
 	session, err := session.Get(paymentId, nil)
@@ -40,7 +39,8 @@ func (p *payment) SendPayment(input *PaymentInput) (*stripe.CheckoutSession, err
 				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
 					Currency: stripe.String("brl"),
 					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-						Name: stripe.String("Payment"),
+						Name:        stripe.String(input.ProductData.Name),
+						Description: stripe.String(input.ProductData.Description),
 						// Products are created in the Stripe dashboard.
 					},
 					UnitAmount: stripe.Int64(amountInCents),
@@ -48,8 +48,8 @@ func (p *payment) SendPayment(input *PaymentInput) (*stripe.CheckoutSession, err
 				Quantity: stripe.Int64(1),
 			},
 		},
-		Mode: stripe.String(string(stripe.CheckoutSessionModePayment)),
-		CancelURL: stripe.String(p.failureUrl),
+		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
+		CancelURL:  stripe.String(p.failureUrl),
 		SuccessURL: stripe.String(p.successUrl),
 	}
 
